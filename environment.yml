@@ -1,0 +1,10 @@
+name: tdacm
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - conda-forge::dash
+  - conda-forge::pandas
+  - conda-forge::plotly
+  - conda-forge::python=3.10
+  - conda-forge::setuptools
