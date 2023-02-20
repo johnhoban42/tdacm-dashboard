@@ -7,4 +7,5 @@ dependencies:
   - conda-forge::pandas
   - conda-forge::plotly
   - conda-forge::python=3.10
+  - conda-forge::requests
   - conda-forge::setuptools
