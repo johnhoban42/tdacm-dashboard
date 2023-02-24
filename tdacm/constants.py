@@ -7,3 +7,5 @@ SP_API_HEADER = {
     "accept": "application/json",
     "Content-Type": "application/json",
 }
+
+DATA_COLS = ["time", "temperature", "humidity"]

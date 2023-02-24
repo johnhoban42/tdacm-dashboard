@@ -3,8 +3,9 @@ from typing import Any
 import pandas as pd
 import requests
 
-from tdacm.constants import SP_API_PREFIX, SP_LOGIN
+from tdacm.constants import DATA_COLS, SP_API_PREFIX, SP_LOGIN
 from tdacm.custom_types import DateLike
+from concurrent.futures import as_completed, ThreadPoolExecutor
 
 
 class SensorPushClient:
@@ -73,6 +74,33 @@ class SensorPushClient:
         """TDACM sensor name"""
         return self._sensor_name
 
+    def _get_samples_helper(
+        self, date_range: tuple[pd.Timestamp, pd.Timestamp]
+    ) -> pd.DataFrame:
+        """
+        Helper method to fetch a one-day subset of sample data.
+        """
+        samples = self._send_request(
+            "samples",
+            {
+                "limit": 2_000,
+                "sensors": [self._sensor_id],
+                "startTime": date_range[0].strftime("%Y-%m-%dT%H:%M:%S+0000"),
+                "stopTime": date_range[1].strftime("%Y-%m-%dT%H:%M:%S+0000"),
+            },
+        )
+        # No data - return an empty DataFrame with the expected columns
+        if not samples.get("sensors"):
+            return pd.DataFrame(columns=DATA_COLS)
+        # Data found - format and return to main thread
+        df_samples = pd.DataFrame(samples["sensors"][self._sensor_id])
+        df_samples = (
+            df_samples.assign(time=pd.to_datetime(df_samples["observed"], utc=True))
+            .sort_values("time")
+            .reset_index()[DATA_COLS]
+        )
+        return df_samples
+
     def get_samples(self, start_date: DateLike) -> pd.DataFrame:
         """
         Get a time series of temperature, humidity, and pressure data
@@ -82,17 +110,15 @@ class SensorPushClient:
         :return:
             DataFrame with columns `time`, `temperature`, `humidity`, and `pressure`
         """
-        start_dt = pd.Timestamp(start_date)
-        samples = self._send_request(
-            "samples",
-            {
-                "limit": 10000,
-                "sensors": [self._sensor_id],
-                "startTime": start_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            },
-        )
-        df_samples = pd.DataFrame(samples["sensors"][self._sensor_id])
-        df_samples = df_samples.assign(
-            time=pd.to_datetime(df_samples["observed"], utc=True)
-        ).drop(columns=["gateways", "observed"])
+        start_dt = pd.Timestamp(start_date, tz="UTC")
+        end_dt = pd.Timestamp.utcnow()
+        # Sample request I/O time is proportional to the length of time requested
+        # Run individual requests for each day concurrently to speed up I/O
+        date_range = pd.date_range(start_dt, end_dt, freq="D")
+        date_tuples = [(start, end) for start, end in zip(date_range, date_range[1:])]
+        # Include "remainder" time period of the partial last day
+        date_tuples.append((date_range[-1], end_dt))
+        with ThreadPoolExecutor(10) as executor:
+            responses = executor.map(self._get_samples_helper, date_tuples)
+        df_samples = pd.concat(responses).sort_values("time")
         return df_samples
