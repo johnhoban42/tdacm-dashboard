@@ -3,6 +3,7 @@ from typing import Any
 
 import pandas as pd
 import requests
+from pandas.tseries.offsets import Hour
 
 from tdacm.constants import DATA_COLS, SP_API_PREFIX, SP_LOGIN
 from tdacm.custom_types import DateLike
@@ -95,11 +96,9 @@ class SensorPushClient:
             return pd.DataFrame(columns=DATA_COLS)
         # Data found - format and return to main thread
         df_samples = pd.DataFrame(samples["sensors"][self._sensor_id])
-        df_samples = (
-            df_samples.assign(time=pd.to_datetime(df_samples["observed"], utc=True))
-            .sort_values("time")
-            .reset_index()[DATA_COLS]
-        )
+        df_samples = df_samples.assign(
+            time=pd.to_datetime(df_samples["observed"], utc=True)
+        )[DATA_COLS]
         return df_samples
 
     def get_samples(self, start_date: DateLike) -> pd.DataFrame:
@@ -116,10 +115,20 @@ class SensorPushClient:
         # Sample request I/O time is proportional to the length of time requested
         # Run individual requests for each day concurrently to speed up I/O
         date_range = pd.date_range(start_dt, end_dt, freq="D")
-        date_tuples = [(start, end) for start, end in zip(date_range, date_range[1:])]
+        # Overlap requests by an hour to assure we cover the entire time series
+        # For some reason, requests with a stopTime stop 30 min short... not sure why
+        date_tuples = [
+            (start, end + Hour()) for start, end in zip(date_range, date_range[1:])
+        ]
         # Include "remainder" time period of the partial last day
         date_tuples.append((date_range[-1], end_dt))
         with ThreadPoolExecutor(10) as executor:
             responses = executor.map(self._get_samples_helper, date_tuples)
-        df_samples = pd.concat(responses).sort_values("time")
+        # Remove duplicates from overlapping requests and sort
+        df_samples = (
+            pd.concat(responses)
+            .drop_duplicates("time")
+            .sort_values("time")
+            .reset_index(drop=True)
+        )
         return df_samples
