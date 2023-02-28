@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pandas as pd
@@ -5,7 +6,6 @@ import requests
 
 from tdacm.constants import DATA_COLS, SP_API_PREFIX, SP_LOGIN
 from tdacm.custom_types import DateLike
-from concurrent.futures import as_completed, ThreadPoolExecutor
 
 
 class SensorPushClient:
@@ -85,6 +85,7 @@ class SensorPushClient:
             {
                 "limit": 2_000,
                 "sensors": [self._sensor_id],
+                "measures": ["temperature", "humidity", "barometric_pressure"],
                 "startTime": date_range[0].strftime("%Y-%m-%dT%H:%M:%S+0000"),
                 "stopTime": date_range[1].strftime("%Y-%m-%dT%H:%M:%S+0000"),
             },

@@ -8,4 +8,4 @@ SP_API_HEADER = {
     "Content-Type": "application/json",
 }
 
-DATA_COLS = ["time", "temperature", "humidity"]
+DATA_COLS = ["time", "temperature", "humidity", "barometric_pressure"]
