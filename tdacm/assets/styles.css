@@ -1,0 +1,10 @@
+body {
+    background-color: #222222;
+}
+.dash-graph {
+    padding: 25px;
+    height: 25vh;
+}
+.main-svg {
+    border-radius: 25px;
+}
