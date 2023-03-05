@@ -29,7 +29,7 @@ body {
     background-color: #4A4A4A;
     border: none;
 }
-.navbar-button:hover {
+.navbar-button:hover, .navbar-button:disabled {
     color: #222222;
-    background-color: #9EDDE7;
+    background-color: #9EDDE7 !important;
 }
