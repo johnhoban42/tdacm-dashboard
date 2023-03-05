@@ -18,9 +18,38 @@ PLOT_STYLE = dict(
     font={"family": "Helvetica", "color": "#CADBE3"},
 )
 
-app = Dash(__name__)
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = html.Div(
     [
+        dbc.Navbar(
+            dbc.Container(
+                [
+                    dbc.Col(dbc.NavbarBrand("TDACM DASHBOARD"), width=7),
+                    dbc.Col(html.I("Loading...", id="dashboard-timestamp"), width=3),
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "30M",
+                                id="dashboard-button-30m",
+                                class_name="navbar-button",
+                            ),
+                            dbc.Button(
+                                "24H",
+                                id="dashboard-button-24h",
+                                class_name="navbar-button",
+                            ),
+                            dbc.Button(
+                                "7D",
+                                id="dashboard-button-7d",
+                                class_name="navbar-button",
+                            ),
+                        ]
+                    ),
+                ]
+            ),
+            dark=True,
+        ),
         dcc.Interval(id="dashboard-interval", interval=60 * 1000),
         dbc.Row(dcc.Graph(id="dashboard-fig-temperature")),
         dbc.Row(dcc.Graph(id="dashboard-fig-humidity")),
