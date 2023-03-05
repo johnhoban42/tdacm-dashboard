@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -21,6 +22,8 @@ class SensorPushClient:
         self._init_auth()
         self._sensor_id = self._get_sensor_id()
         self._sensor_name = self._get_sensor_name()
+        # Get time zone - https://stackoverflow.com/a/49837366
+        self._tzinfo = datetime.utcnow().astimezone().tzinfo
 
     def _send_request(self, endpoint: str, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -110,7 +113,8 @@ class SensorPushClient:
         :return:
             DataFrame with columns `time`, `temperature`, `humidity`, and `pressure`
         """
-        start_dt = pd.Timestamp(start_date, tz="UTC")
+        start_dt_local = pd.Timestamp(start_date, tzinfo=self._tzinfo)
+        start_dt = start_dt_local.tz_convert("UTC")
         end_dt = pd.Timestamp.utcnow()
         # Sample request I/O time is proportional to the length of time requested
         # Run individual requests for each day concurrently to speed up I/O
@@ -124,11 +128,12 @@ class SensorPushClient:
         date_tuples.append((date_range[-1], end_dt))
         with ThreadPoolExecutor(10) as executor:
             responses = executor.map(self._get_samples_helper, date_tuples)
-        # Remove duplicates from overlapping requests and sort
+        # Remove duplicates from overlapping requests, then sort and localize times
         df_samples = (
             pd.concat(responses)
             .drop_duplicates("time")
             .sort_values("time")
             .reset_index(drop=True)
         )
+        df_samples["time"] = df_samples["time"].dt.tz_convert(self._tzinfo)
         return df_samples

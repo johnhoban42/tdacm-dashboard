@@ -31,6 +31,7 @@ app = DashProxy(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     transforms=[MultiplexerTransform()],
 )
+app.title = "TDACM Dashboard"
 app.layout = html.Div(
     [
         dbc.Navbar(
