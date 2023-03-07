@@ -1,0 +1,35 @@
+body {
+    background-color: #222222;
+}
+.dash-graph {
+    padding: 25px;
+    height: 30vh;
+}
+.main-svg {
+    border-radius: 25px;
+}
+
+/* navbar */
+.navbar-dark {
+    font-family: Helvetica;
+    color: #9EDDE7;
+    background-color: #101010 !important;
+}
+.navbar-brand {
+    color: #9EDDE7;
+    font-weight: bold;
+}
+.navbar-button {
+    padding: 5px;
+    margin: 5px;
+    height: 40px;
+    width: 40px;
+    font-size: 12px;
+    color: #9EDDE7;
+    background-color: #4A4A4A;
+    border: none;
+}
+.navbar-button:hover, .navbar-button:disabled {
+    color: #222222;
+    background-color: #9EDDE7 !important;
+}

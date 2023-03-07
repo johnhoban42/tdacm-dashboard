@@ -1,0 +1,7 @@
+click
+dash
+dash-bootstrap-components
+dash-extensions
+pandas
+plotly
+requests
